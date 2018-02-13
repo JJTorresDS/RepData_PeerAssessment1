@@ -1,0 +1,76 @@
+Week 2 Assignment
+==============================
+
+### Load Parameters and libraries
+
+We will first load the paremeters to read in the file.
+
+```{r Load Parameters}
+fileName <- "activity.csv"
+
+library(ggplot2)
+library(dplyr)
+```
+
+### Read in the file and create a codebook
+
+Read file into a dataframe.
+
+```{r}
+
+df <- read.csv(fileName, header = T)
+str(df)
+
+```
+
+### Preprocessing
+
+Before analyzing the dataset, we will run the following pre-processing steps.
+
+1. Convert 'data' variable into date format
+2. convert 'interval' variable to factor
+
+
+Convert variables to their corresponding classes.
+
+```{r}
+df$date <- as.Date(df$date, "%Y-%m-%d")
+
+str(df)
+```
+
+### What is the mean total number of steps taken per day?
+
+#### Histogram of the total number of steps taken each day.
+
+```{r Histogram, warning=F, fig.align= 'center'}
+grouped <- group_by(df, date)
+grouped <- summarise_all(grouped, sum)
+ggplot(grouped, aes(x = steps)) + geom_histogram(bins=30) + ggtitle("Total Number of Steps per day") +
+    ylab("Counts") +
+    xlab("Number of steps (daily)")
+
+```
+
+#### Mean and Median total number of steps taken per day
+
+```{r echo=F}
+
+print(paste0("Average number of steps per day: ",round(mean(grouped$steps, na.rm=T),0)))
+
+print(paste0("Median number of steps per day: ",round(median(grouped$steps, na.rm=T),0)))
+
+```
+
+```{r Export Histogram, echo =F}
+png("./instructions_fig/Histogram.png")
+grouped <- group_by(df, date)
+grouped <- summarise_all(grouped, sum)
+ggplot(grouped, aes(x = steps)) + geom_histogram(bins=30) + ggtitle("Total Number of Steps per day") +
+    ylab("Counts") +
+    xlab("Number of steps (daily)")
+
+dev.off()
+
+```
+
