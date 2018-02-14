@@ -54,7 +54,7 @@ ggplot(grouped, aes(x = steps)) + geom_histogram(bins=30) + ggtitle("Total Numbe
 
 #### Mean and Median total number of steps taken per day
 
-```{r Mean and Median,echo=F}
+```{r Mean and Median}
 
 print(paste0("Average number of steps per day: ",round(mean(grouped$steps, na.rm=T),0)))
 
@@ -62,17 +62,6 @@ print(paste0("Median number of steps per day: ",round(median(grouped$steps, na.r
 
 ```
 
-```{r Export Histogram, echo =F, message=FALSE, warning=FALSE}
-png("./instructions_fig/Histogram.png")
-grouped <- group_by(df, date)
-grouped <- summarise_all(grouped, sum)
-ggplot(grouped, aes(x = steps)) + geom_histogram(bins=30) + ggtitle("Total Number of Steps per day") +
-    ylab("Counts") +
-    xlab("Number of steps (daily)")
-
-dev.off()
-
-```
 
 ### What is the average daily activity pattern?
 
@@ -93,17 +82,6 @@ p + geom_line()+
     ggtitle("Average Number of Steps by Interval")
 
 ```
-
-```{r Export Time Series, echo=F, message=FALSE, warning=FALSE}
-png("./instructions_fig/AverageStepsTimeSeries.png")
-p + geom_line()+
-    xlab("Intervals")+
-    ylab("Average Steps")+
-    ggtitle("Average Number of Steps by Interval")
-dev.off()
-
-```
-
 
 #### Determine the Interval with maximum average steps per day
 
@@ -189,7 +167,7 @@ print(if_else(sum(!complete.cases(imputed)) > 0, "Missing Values in Imputed DF",
 
 Now lets compare the distribution of the imputed data frame versus the data frame with missing values.
 
-```{r, echo =F, warning = F, fig.height=3, fig.width=7, message=F}
+```{r, echo =T, warning = F, fig.height=3, fig.width=7, message=F}
 imputedSub <- select(imputed, date, steps)
 groupedImp <- group_by(imputedSub, date)
 groupedImp <- summarise_all(groupedImp, sum)
@@ -217,17 +195,10 @@ summary(imputed$steps)
 ```
 We observe that only the third quartile was significantly affected by the imputation, but this makes sense, since there are now 2304 additional values.
 
-```{r Export Imputed Histogram, message=F, warning=F, echo=F}
-png("./instructions_fig/ImputedValues_Histogram.png")
-p1
-dev.off()
-
-```
 
 The table below compares the mean and median of the 'Imputed' and 'Non Imputed' data frames.
 
-```{r Imputed Mean and Median,echo=F}
-
+```{r Imputed Mean and Median}
 mean_median = data.frame(DataFrame = 'Imputed',
                          Mean =round(mean(groupedImp$steps, na.rm=T),0),
                          Median = round(median(groupedImp$steps, na.rm=T),0))
@@ -261,9 +232,3 @@ p
 ```
 
 The results show that people tend to wake up later over the weekends and also that the average number of steps across intervals is more evenly distributed (there is no 'significant' peak).
-
-```{r Export Weekend vs Weekday TS, message=F, warning=F, echo=F}
-png("./instructions_fig/Weekend_Weekday_TimeSeries.png")
-p
-dev.off()
-```
