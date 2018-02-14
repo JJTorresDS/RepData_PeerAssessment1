@@ -2,18 +2,19 @@ Week 2 Assignment
 ==============================
 
 ###Load and Preprocess the data
+
 #### Load Parameters and libraries
 
 We will first load the paremeters to read in the file.
 
-```{r Load Parameters}
+```{r Load Parameters, message=FALSE}
 fileName <- "activity.csv"
 
 library(ggplot2)
 library(dplyr)
 ```
 
-We´ll now proceed to read the file into a dataframe.
+We´ll now proceed to read the file into a dataframe and have a quick look at the variable types.
 
 ```{r Read data}
 
@@ -24,17 +25,11 @@ str(df)
 
 #### Preprocessing
 
-Before analyzing the dataset, we will run the following pre-processing steps.
+Before analyzing the dataset, we will convert the 'date' variable into date format.
 
-1. Convert 'data' variable into date format
-2. convert 'interval' variable to factor
-
-
-Convert variables to their corresponding classes.
 
 ```{r Preprocessing}
 df$date <- as.Date(df$date, "%Y-%m-%d")
-
 str(df)
 ```
 
@@ -61,7 +56,7 @@ print(paste0("Median number of steps per day: ",round(median(grouped$steps, na.r
 
 ```
 
-```{r Export Histogram, echo =F, warning=FALSE}
+```{r Export Histogram, echo =F, message=FALSE, warning=FALSE}
 png("./instructions_fig/Histogram.png")
 grouped <- group_by(df, date)
 grouped <- summarise_all(grouped, sum)
@@ -93,7 +88,7 @@ p + geom_line()+
 
 ```
 
-```{r Export Time Series, echo=F, warning=FALSE}
+```{r Export Time Series, echo=F, message=FALSE, warning=FALSE}
 png("./instructions_fig/AverageStepsTimeSeries.png")
 p + geom_line()+
     xlab("Intervals")+
@@ -112,3 +107,114 @@ We can see that the maximum average steps take place at the "8:35AM" time interv
 index <- which.max(int_group$AverageSteps)
 print(int_group[index,])
 ```
+
+### Imputing Missing Values
+
+#### Number of rows with missing values
+
+```{r}
+index <- !complete.cases(df)
+summary(df)
+print(paste0("Number of observations with missing values: ", sum(index)))
+```
+
+#### Imputing missing values
+
+By reviewing the previous summary output, we can see that only the 'steps' variable contains missing values.
+
+We will use either the mean or median to impute the missing values. Before settling for a one of those measures of center, we will explore the missingness to see if there is an underlying pattern.
+
+```{r Missing by Day}
+missinV <- df[index,]
+missinV$Days <- weekdays(missinV$date)
+
+p <- ggplot(missinV, aes(Days))
+
+p + geom_bar()
+
+```
+
+The missing values seem to be spread evenly across days, except for Friday and Monday which contain twice as much missing values than the rest of the days, and there are no missing values on Tuesdays.
+
+Lets have a look at how the missingness relates to time intervals.
+
+```{r}
+hist(missinV$interval, breaks=30, xlim = c(0,2500),
+     ylim=c(0,120))
+summary(missinV$interval)
+
+```
+
+The missingess seems to be uniformely distributed across intervals.
+
+
+Not, lets review the five number summary of stops across days.
+
+```{r}
+df$Days <- weekdays(df$date)
+tapply(df$steps, df$Days, summary)
+
+```
+
+The previous output shows that using the median, would replace every value by 0. This may not be very helpful since ~2300 additional zeros might significantly pull the mean. We will instead use the mean.
+
+We could also observe that the fivenumber summary varied for each day, so we will just use the average value of each week day, to compute the missing values.
+
+```{r Imputing Missing Values}
+#Create an array with the average step for each day
+dayTable <- tapply(df$steps, df$Days, mean, na.rm=T)
+
+#create a copy of the original data frame
+imputed <- df
+
+# create a boolean vector of NA observations
+naIndex <- is.na(imputed$steps)
+
+for(day in names(dayTable)){
+    nameIndex <- imputed$Days == day
+    imputed$steps[naIndex & nameIndex] <- dayTable[day]
+}
+
+# Check that there are no missing values in imputed DF
+print(if_else(sum(!complete.cases(imputed)) > 0, "Missing Values in Imputed DF",
+   "No Missing Values in Imputed DF"))
+
+```
+
+Now lets compare the distribution of the imputed data frame versus the data frame with missing values.
+
+```{r, echo =F, warning = F, fig.height=3, fig.width=7, message=F}
+imputedSub <- select(imputed, date, steps)
+groupedImp <- group_by(imputedSub, date)
+groupedImp <- summarise_all(groupedImp, sum)
+
+p1 <- ggplot(groupedImp, aes(x = steps)) + geom_histogram(bins=30) + ggtitle("Total Number of Steps per day (Imputed DF)") +
+    ylab("Counts") +
+    xlab("Number of steps (daily)")
+
+
+p2 <- ggplot(grouped, aes(x = steps)) + geom_histogram(bins=30) + ggtitle("Total Number of Steps per day") +
+    ylab("Counts") +
+    xlab("Number of steps (daily)")
+
+p1;p2
+```
+
+By looking at the two histograms, we can see that the count of days with ~10000:~14000 steps has increased slightly, altough this does not seem to have affected the five number summary significantly.
+
+Lets compare these stats.
+
+```{r}
+summary(df$steps)
+summary(imputed$steps)
+
+```
+We observe that only the third quartile was significantly affected by the imputation, but this makes sense, since there are now 2304 additional values.
+
+```{r Export Imputed Histogram, message=F, warning=F, echo=F}
+png("./instructions_fig/ImputedValues_Histogram.png")
+p1
+dev.off()
+
+```
+
