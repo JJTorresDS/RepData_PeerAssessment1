@@ -218,3 +218,18 @@ dev.off()
 
 ```
 
+The table below compares the mean and median of the 'Imputed' and 'Non Imputed' data frames.
+
+```{r Imputed Mean and Median,echo=F}
+
+mean_median = data.frame(DataFrame = 'Imputed',
+                         Mean =round(mean(groupedImp$steps, na.rm=T),0),
+                         Median = round(median(groupedImp$steps, na.rm=T),0))
+
+mean_median <- rbind(mean_median,
+                     data.frame(DataFrame = 'Non Imputed',
+                         Mean =round(mean(grouped$steps, na.rm=T),0),
+                         Median = round(median(grouped$steps, na.rm=T),0)))
+
+mean_median
+```
